@@ -15,18 +15,21 @@ pipeline {
         echo "Selected env: ${params.ENV_FILE}"
       }
     }
+
     stage('Install deps') {
-            steps {
-                sh 'npm ci'
+        steps {
+          dir('TestAutomation') {
+              sh 'npm ci'
+          }
+        }
+    }
+
+    stage('Run Playwright Tests') {
+        steps {
+            dir('TestAutomation') {
+                sh "ENV=${params.ENV} npx playwright test"
             }
         }
-        stage('Run Playwright Tests') {
-            steps {
-                sh """
-                export ENV=${params.ENV}
-                npx playwright test
-                """
-            }
-        }
+    }
   }
 }
