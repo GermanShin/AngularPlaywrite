@@ -4,49 +4,16 @@ pipeline {
   parameters {
     choice(
       name: 'ENV_FILE',
-      choices: ['env/env.dev', 'env/env.test', 'env/env.stg'],
-      description: 'Choose the environment configuration file to use'
+      choices: ['env/env.dev', 'env/env.qa'],
+      description: 'Choose environment'
     )
   }
 
-  environment {
-    // Jenkins will populate this later via script
-  }
-
   stages {
-    stage('Install Dependencies') {
+    stage('Echo Env File') {
       steps {
-        sh 'npm ci'
+        echo "Selected env: ${params.ENV_FILE}"
       }
-    }
-
-    stage('Load Environment Variables') {
-      steps {
-        script {
-          def envVars = readFile("${params.ENV_FILE}")
-            .split("\n")
-            .findAll { it && !it.startsWith("#") }
-            .collect { it.trim() }
-
-          for (line in envVars) {
-            def (key, value) = line.tokenize("=")
-            echo "Injecting ${key}=******"
-            env."${key}" = value
-          }
-        }
-      }
-    }
-
-    stage('Run Playwright Tests') {
-      steps {
-        sh 'npx playwright test'
-      }
-    }
-  }
-
-  post {
-    always {
-      archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
     }
   }
 }
