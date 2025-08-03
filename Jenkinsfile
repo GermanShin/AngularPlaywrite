@@ -3,9 +3,9 @@ pipeline {
 
   parameters {
     choice(
-      name: 'ENV_FILE',
-      choices: ['env/env.dev', 'env/env.qa'],
-      description: 'Choose environment'
+        name: 'ENV',
+        choices: ['dev', 'test', 'stg'],  // List your envs here
+        description: 'Select the environment to run Playwright tests against'
     )
   }
 
