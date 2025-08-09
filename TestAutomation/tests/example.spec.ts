@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('has title', async ({ page }) => {
-  await page.goto('localhost:4200');
+  await page.goto('/');
 });
 
 test('get started link', async ({ page }) => {
