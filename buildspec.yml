@@ -5,6 +5,8 @@ phases:
     runtime-versions:
       nodejs: 24  # Specify a recent Node.js version
     commands:
+      # Change the working directory to where your Playwright project is located
+      - cd TestAutomation
       # Install project dependencies, including TypeScript and Playwright
       - npm install
       # Install Playwright's browsers and their dependencies
