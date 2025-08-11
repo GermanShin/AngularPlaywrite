@@ -13,13 +13,11 @@ phases:
   build:
     commands:
       # Change directory for the build phase
-      - cd TestAutomation
       - npx playwright test
 
   post_build:
     commands:
       # Change directory for the post_build phase
-      - cd TestAutomation
       - echo "Playwright tests finished."
       - echo "Checking for reports..."
       
