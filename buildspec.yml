@@ -1,0 +1,34 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 24  # Specify a recent Node.js version
+    commands:
+      # Install project dependencies, including TypeScript and Playwright
+      - npm install
+      # Install Playwright's browsers and their dependencies
+      - npx playwright install --with-deps
+
+  build:
+    commands:
+      # Playwright Test automatically handles TypeScript compilation (transpilation)
+      # You can just run the test command directly.
+      # The default command 'npx playwright test' will discover and run your tests.
+      - npx playwright test
+
+  post_build:
+    commands:
+      # Optional: You can add commands to check for test reports or perform cleanup
+      - echo "Playwright tests finished. Checking for reports..."
+
+reports:
+  # Playwright generates an HTML report by default.
+  # This section tells CodeBuild to capture and store it as a report.
+  # Note: This is an example for storing a basic report.
+  # You might need to adjust the path based on your Playwright config.
+  playwright-html-report:
+    files:
+      - 'playwright-report/**/*'
+    base-directory: 'playwright-report'
+    discard-paths: no
