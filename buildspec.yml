@@ -5,21 +5,22 @@ phases:
     runtime-versions:
       nodejs: 24
     commands:
+      # Change directory for the install phase
       - cd TestAutomation
       - npm install
-      # This command installs the browser binaries without
-      # attempting to use apt-get for system dependencies
       - npx playwright install
       
   build:
     commands:
+      # Change directory for the build phase
       - cd TestAutomation
       - npx playwright test
 
   post_build:
     commands:
-      - echo "Playwright tests finished."
+      # Change directory for the post_build phase
       - cd TestAutomation
+      - echo "Playwright tests finished."
       - echo "Checking for reports..."
       
 reports:
