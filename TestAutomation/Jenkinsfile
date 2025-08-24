@@ -42,6 +42,14 @@ pipeline {
           }
     }
 
+    stage('Synthesize Stack') {
+      steps {
+          dir('TestAutomation/cdk') {
+              sh 'npm run cdk:synth'
+          }
+      }
+    }
+
     stage('Deploy CDK Stack (Optional)') {
         when {
             expression { return params.DEPLOY_CDK }
@@ -50,7 +58,8 @@ pipeline {
             script {
                 withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                     dir('TestAutomation/cdk') {
-                        sh 'npm ci'
+                       // Placeholder for actual CDK deploy
+                      echo 'This is the deploy step. CDK deploy is not executed.'
                     }
                 }
             }
