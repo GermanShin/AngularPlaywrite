@@ -1,5 +1,6 @@
 {
   "app": "npx ts-node bin/cdk.ts",
+  "outputsFile": "cdk.out/template.yaml",
   "watch": {
     "include": [
       "**"
