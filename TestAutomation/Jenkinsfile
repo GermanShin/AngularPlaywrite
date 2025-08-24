@@ -16,6 +16,30 @@ pipeline {
       }
     }
 
+    stage('Check AWS CLI Execution') {
+      stage('Check AWS CLI Execution') {
+            steps {
+                script {
+                    // Use withCredentials to bind the stored AWS credentials to environment variables
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                         credentialsId: 'david-shin-iam-user-cred',
+                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
+                    ]) {
+                        // The AWS CLI automatically uses these environment variables
+                        // to authenticate.
+                        // We run a simple command to list S3 buckets.
+                        sh 'aws s3 ls'
+                        
+                        // We can also check the identity of the user
+                        sh 'aws sts get-caller-identity'
+                    }
+                }
+            }
+        }
+    }
+
     stage('Install deps') {
         steps {
           dir('TestAutomation') {
