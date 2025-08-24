@@ -45,7 +45,7 @@ pipeline {
     stage('Synthesize Stack') {
       steps {
           dir('TestAutomation/cdk') {
-              sh 'npm run cdk:synth'
+              sh 'npm run synth'
           }
       }
     }
