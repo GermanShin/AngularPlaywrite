@@ -42,7 +42,22 @@ pipeline {
                   }
               }
           }
-  }
+    }
+
+    stage('Deploy CDK Stack (Optional)') {
+        when {
+            expression { return params.DEPLOY_CDK }
+        }
+        steps {
+            script {
+                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
+                    dir('cdk') {
+                        sh 'npm ci'
+                    }
+                }
+            }
+        }
+    }
     
 
     stage('Install deps') {
