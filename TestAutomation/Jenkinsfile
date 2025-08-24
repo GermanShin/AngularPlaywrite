@@ -6,6 +6,11 @@ pipeline {
         name: 'ENV',
         choices: ['dev', 'test', 'stg'],  // List your envs here
         description: 'Select the environment to run Playwright tests against'
+    ),
+     booleanParam(
+            name: 'DEPLOY_CDK',
+            defaultValue: false,
+            description: 'Deploy CDK stack before running tests'
     )
   }
 
