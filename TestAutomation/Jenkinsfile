@@ -45,12 +45,7 @@ pipeline {
     stage('Synthesize Stack') {
         steps {
             script{
-                withCredentials([
-                  [$class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'david-shin-iam-user-cred',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
-              ]){
+               withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                     dir('TestAutomation/cdk') {
                         sh 'npm ci'
                         sh 'npm run synth'
@@ -67,12 +62,7 @@ pipeline {
         }
         steps {
             script {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'david-shin-iam-user-cred',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
+                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                         dir('TestAutomation/cdk') {
                             sh "npx cdk bootstrap aws://484907527321/${AWS_REGION}"
                         }
@@ -87,12 +77,7 @@ pipeline {
         }
         steps {
             script {
-                withCredentials([
-                  [$class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'david-shin-iam-user-cred',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
-                ]) {
+                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                     dir('TestAutomation/cdk') {
                         //Placeholder for actual CDK deploy
                         //echo 'This is the deploy step. CDK deploy is not executed.'
