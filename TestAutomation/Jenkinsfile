@@ -61,6 +61,26 @@ pipeline {
         }
     }
 
+    stage('Bootstrap CDK (Optional)') {
+        when {
+            expression { return params.DEPLOY_CDK }
+        }
+        steps {
+            script {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'david-shin-iam-user-cred',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        dir('TestAutomation/cdk') {
+                            sh "npx cdk bootstrap aws://484907527321/${AWS_REGION}"
+                        }
+                    }
+                }
+            }
+    }
+
     stage('Deploy CDK Stack (Optional)') {
         when {
             expression { return params.DEPLOY_CDK }
