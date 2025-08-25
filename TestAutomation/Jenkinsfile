@@ -60,6 +60,8 @@ pipeline {
                     dir('TestAutomation/cdk') {
                         // Placeholder for actual CDK deploy
                         //echo 'This is the deploy step. CDK deploy is not executed.'
+                        sh 'npm ci'
+                        sh 'npm install aws-cdk --save-dev'  // Ensure CDK CLI is available
                         sh 'npx cdk deploy --require-approval never'
                     }
                 }
