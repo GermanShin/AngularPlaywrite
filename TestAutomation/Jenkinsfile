@@ -60,7 +60,7 @@ pipeline {
                     dir('TestAutomation/cdk') {
                         // Placeholder for actual CDK deploy
                         //echo 'This is the deploy step. CDK deploy is not executed.'
-                        sh 'npm run cdk:deploy --require-approval never'
+                        sh 'npx cdk deploy --require-approval never'
                     }
                 }
             }
