@@ -44,9 +44,20 @@ pipeline {
 
     stage('Synthesize Stack') {
         steps {
-            dir('TestAutomation/cdk') {
-                sh 'npm run synth'
+            script{
+                withCredentials([
+                  [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'david-shin-iam-user-cred',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
+              ]){
+                    dir('TestAutomation/cdk') {
+                        sh 'npm ci'
+                        sh 'npm run synth'
+                    }
+              }
             }
+
         }
     }
 
