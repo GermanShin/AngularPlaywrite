@@ -74,20 +74,20 @@ pipeline {
     }
 
 
-//     stage('Install deps') {
-//         steps {
-//           dir('TestAutomation') {
-//               sh 'npm ci'
-//           }
-//         }
-//     }
+    // stage('Install deps') {
+    //     steps {
+    //       dir('TestAutomation') {
+    //           sh 'npm ci'
+    //       }
+    //     }
+    // }
 
-//     stage('Run Playwright Tests') {
-//         steps {
-//             dir('TestAutomation') {
-//                 sh "ENV=${params.ENV} npx playwright test"
-//             }
-//         }
-//     }
-//   }
+    // stage('Run Playwright Tests') {
+    //     steps {
+    //         dir('TestAutomation') {
+    //             sh "ENV=${params.ENV} npx playwright test"
+    //         }
+    //     }
+    // }
+  }
 }
