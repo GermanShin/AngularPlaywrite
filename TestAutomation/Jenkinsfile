@@ -19,28 +19,13 @@ pipeline {
   }
 
   stages {
+
     stage('Echo Env File') {
       steps {
         echo "Selected env: ${params.ENV_FILE}"
       }
     }
 
-
-    stage('Check AWS CLI Execution') {
-      steps {
-          script {
-              withCredentials([
-                  [$class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'david-shin-iam-user-cred',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
-              ]) {
-                  sh 'aws s3 ls'
-                  sh 'aws sts get-caller-identity'
-              }
-          }
-      }
-    }
 
     stage('Synthesize Stack') {
         steps {
@@ -79,10 +64,8 @@ pipeline {
             script {
                 withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                     dir('TestAutomation/cdk') {
-                        //Placeholder for actual CDK deploy
-                        //echo 'This is the deploy step. CDK deploy is not executed.'
                         sh 'npm ci'
-                        sh 'npm install aws-cdk --save-dev'  // Ensure CDK CLI is available
+                        sh 'npm install aws-cdk --save-dev'
                         sh 'npx cdk deploy --require-approval never'
                     }
                 }
