@@ -73,21 +73,17 @@ pipeline {
         }
     }
 
-
-    // stage('Install deps') {
-    //     steps {
-    //       dir('TestAutomation') {
-    //           sh 'npm ci'
-    //       }
-    //     }
-    // }
-
-    // stage('Run Playwright Tests') {
-    //     steps {
-    //         dir('TestAutomation') {
-    //             sh "ENV=${params.ENV} npx playwright test"
-    //         }
-    //     }
-    // }
+    stage('Run Playwright Tests via CodeBuild') {
+        steps {
+            script {
+                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
+                    sh """
+                    echo "aws codebuild start-build \\
+                        --project-name PlaywrightE2ETests \\
+                        --environment-variables-override name=ENV,value=${params.ENV},type=PLAINTEXT"
+                    """
+            }
+    }
+}
   }
 }
