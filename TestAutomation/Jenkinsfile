@@ -83,6 +83,7 @@ pipeline {
                         credentialsId: 'david-shin-iam-user-cred',
                         waitForCompletion: true
                     )
+                }
             }
         }
     }
