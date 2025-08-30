@@ -77,12 +77,11 @@ pipeline {
         steps {
             script {
                 withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                    codeBuild(
-                        projectName: 'PlaywrightE2ETests',
-                        region: "${AWS_REGION}",
-                        credentialsId: 'david-shin-iam-user-cred',
-                        waitForCompletion: true
-                    )
+                    sh """
+                    aws codebuild start-build \
+                        --project-name PlaywrightE2ETests \
+                        --environment-variables-override name=ENV,value=${params.ENV},type=PLAINTEXT
+                     """
                 }
             }
         }
