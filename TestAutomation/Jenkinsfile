@@ -82,8 +82,9 @@ pipeline {
                         --project-name PlaywrightE2ETests \\
                         --environment-variables-override name=ENV,value=${params.ENV},type=PLAINTEXT"
                     """
+                        }
             }
+        }
     }
-}
   }
 }
