@@ -39,6 +39,11 @@ export class MyStack extends cdk.Stack {
                                 nodejs: '18',
                             },
                             commands: [
+                                'echo "📂 Current directory:"',
+                                'pwd', // log current location
+                                'echo "📂 Files here:"',
+                                'ls -la', // show files in current directory
+                                'if [ -f package-lock.json ]; then echo "Found package-lock.json"; else echo "❌ package-lock.json not found"; fi',
                                 'npm ci', // Install project dependencies
                                 'npx playwright install --with-deps', // Install Playwright with browser dependencies
                             ],
