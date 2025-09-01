@@ -8,7 +8,7 @@ phases:
             - echo "Installing Node.js version 22 ..."
             - cd TestAutomation
             - npm ci
-            - npx playwright install --with-deps
+            - npx playwright install
 
     build:
         commands:
