@@ -10,9 +10,10 @@ phases:
             - npm ci
     build:
         commands:
+            - echo "Current dir: $(pwd)"
+            - ls -R
             - cd TestAutomation/cdk1
             - npx cdk synth
-            - npx cdk diff
     post_build:
         commands:
             - echo "CDK build completed."
