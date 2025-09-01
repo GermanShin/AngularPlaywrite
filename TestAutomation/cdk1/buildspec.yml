@@ -6,11 +6,11 @@ phases:
             nodejs: 22
         commands:
             - echo "Installing Node.js version 22 ..."
-            - cd cdk1
+            - cd TestAutomation/cdk1
             - npm ci
     build:
         commands:
-            - cd cdk1
+            - cd TestAutomation/cdk1
             - npx cdk synth
             - npx cdk diff
     post_build:
