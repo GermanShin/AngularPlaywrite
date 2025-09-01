@@ -12,10 +12,13 @@ const assembly = app.synth();
 
 // Convert each stack to YAML and write only YAML
 assembly.stacks.forEach(stack => {
-  const jsonTemplate = fs.readFileSync(stack.templateFullPath, 'utf-8');
-  const yamlTemplate = yaml.stringify(JSON.parse(jsonTemplate));
+    const jsonTemplate = fs.readFileSync(stack.templateFullPath, 'utf-8');
+    const yamlTemplate = yaml.stringify(JSON.parse(jsonTemplate));
 
-  const yamlPath = path.join(assembly.directory, `${stack.stackName}.template.yaml`);
-  fs.writeFileSync(yamlPath, yamlTemplate);
-  console.log(`Generated YAML template at: ${yamlPath}`);
+    const yamlPath = path.join(
+        assembly.directory,
+        `${stack.stackName}.template.yaml`
+    );
+    fs.writeFileSync(yamlPath, yamlTemplate);
+    console.log(`Generated YAML template at: ${yamlPath}`);
 });

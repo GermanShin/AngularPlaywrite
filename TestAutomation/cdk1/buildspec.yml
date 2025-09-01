@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 22
+        commands:
+            - echo "Installing AWS CDK globally..."
+            - npm install -g aws-cdk
+            - echo "Installing project dependencies..."
+            - npm ci
+    build:
+        commands:
+            - echo "Synthesizing CDK stack..."
+            - npx cdk synth
+            - echo "CDK diff (optional)..."
+            - npx cdk diff
+    post_build:
+        commands:
+            - echo "CDK build completed."

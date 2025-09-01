@@ -1,6 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
+import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import { Construct } from 'constructs';
 
 export class MyStack extends cdk.Stack {
@@ -61,6 +64,50 @@ export class MyStack extends cdk.Stack {
                 }),
             }
         );
+
+        // 📦 Pipeline Artifact bucket
+        const artifactBucket = new s3.Bucket(this, 'ArtifactBucket', {
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true,
+        });
+
+        // 📥 Source & Build Artifacts
+        const sourceOutput = new codepipeline.Artifact();
+        const buildOutput = new codepipeline.Artifact();
+
+        // 🔗 GitHub source action using CodeStar connection
+        const sourceAction =
+            new codepipeline_actions.CodeStarConnectionsSourceAction({
+                actionName: 'GitHub_Source',
+                owner: 'GermanShin', // 👈 replace with your GitHub username/org
+                repo: 'AngularPlaywrite', // 👈 replace with your repo name
+                branch: 'main', // 👈 or whichever branch you want
+                output: sourceOutput,
+                connectionArn:
+                    'arn:aws:codeconnections:ap-southeast-2:484907527321:connection/b6681a8b-1d22-4b12-a99b-769f740de7d7',
+            });
+
+        // 🏗️ Build action
+        const buildAction = new codepipeline_actions.CodeBuildAction({
+            actionName: 'Build',
+            project: codeBuildProject,
+            input: sourceOutput,
+            outputs: [buildOutput],
+        });
+
+        // 🚀 Pipeline definition
+        new codepipeline.Pipeline(this, 'PlaywrightPipeline', {
+            artifactBucket,
+            stages: [
+                { stageName: 'Source', actions: [sourceAction] },
+                { stageName: 'Build', actions: [buildAction] },
+            ],
+        });
+
+        // 📌 Output CodeBuild Project name
+        new cdk.CfnOutput(this, 'CodeBuildProjectName', {
+            value: codeBuildProject.projectName,
+        });
 
         new cdk.CfnOutput(this, 'CodeBuildProjectName', {
             value: codeBuildProject.projectName,
