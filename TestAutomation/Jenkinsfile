@@ -4,7 +4,7 @@ pipeline {
   parameters {
     choice(
         name: 'ENV',
-        choices: ['dev', 'test', 'stg'],  // List your envs here
+        choices: ['dev', 'test', 'stg'],
         description: 'Select the environment to run Playwright tests against'
     )
     booleanParam(
@@ -15,7 +15,8 @@ pipeline {
   }
 
   environment {
-      AWS_REGION = "ap-southeast-2"  // Change to your region
+      AWS_REGION = "ap-southeast-2"
+      CODEBUILD_PROJECT = "Prototype-CodeBuild-01092025-01"
   }
 
   stages {
@@ -26,62 +27,45 @@ pipeline {
       }
     }
 
-
-    stage('Synthesize Stack') {
+    stage('Trigger CodeBuild') {
         steps {
-            script{
-               withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                    dir('TestAutomation/cdk') {
-                        sh 'npm ci'
-                        sh 'npm run synth'
+            withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
+                script {
+                    // Start build and get the build ID
+                    def buildId = sh(
+                        script: """
+                            aws codebuild start-build \
+                                --project-name ${CODEBUILD_PROJECT} \
+                                --query 'build.id' \
+                                --output text
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Started CodeBuild with ID: ${buildId}"
+
+                    // Wait for build to finish
+                    def status = "IN_PROGRESS"
+                    while (status == "IN_PROGRESS" || status == "QUEUED") {
+                        sleep(time: 10, unit: 'SECONDS')
+                        status = sh(
+                            script: """
+                                aws codebuild batch-get-builds \
+                                    --ids ${buildId} \
+                                    --query 'builds[0].buildStatus' \
+                                    --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        echo "Current build status: ${status}"
                     }
-              }
-            }
 
-        }
-    }
-
-    stage('Bootstrap CDK (Optional)') {
-        when {
-            expression { return params.DEPLOY_CDK }
-        }
-        steps {
-            script {
-                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                        dir('TestAutomation/cdk') {
-                            sh "npx cdk bootstrap aws://484907527321/${AWS_REGION}"
-                        }
+                    // Fail Jenkins if CodeBuild failed
+                    if (status != "SUCCEEDED") {
+                        error("CodeBuild failed with status: ${status}")
+                    } else {
+                        echo "CodeBuild succeeded!"
                     }
-                }
-            }
-    }
-
-    stage('Deploy CDK Stack (Optional)') {
-        when {
-            expression { return params.DEPLOY_CDK }
-        }
-        steps {
-            script {
-                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                    dir('TestAutomation/cdk') {
-                        sh 'npm ci'
-                        sh 'npm install aws-cdk --save-dev'
-                        sh 'npx cdk deploy --require-approval never'
-                    }
-                }
-            }
-        }
-    }
-
-    stage('Run Playwright Tests via CodeBuild') {
-        steps {
-            script {
-                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                    sh """
-                    aws codebuild start-build \
-                        --project-name PlaywrightE2ETests \
-                        --environment-variables-override name=ENV,value=${params.ENV},type=PLAINTEXT
-                     """
                 }
             }
         }
