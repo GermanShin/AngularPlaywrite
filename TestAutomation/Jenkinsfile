@@ -1,74 +1,68 @@
 pipeline {
-  agent any
+    agent any
 
-  parameters {
-    choice(
-        name: 'ENV',
-        choices: ['dev', 'test', 'stg'],
-        description: 'Select the environment to run Playwright tests against'
-    )
-    booleanParam(
-            name: 'DEPLOY_CDK',
-            defaultValue: false,
-            description: 'Deploy CDK stack before running tests'
-    )
-  }
-
-  environment {
-      AWS_REGION = "ap-southeast-2"
-      CODEBUILD_PROJECT = "Prototype-CodeBuild-01092025-01"
-  }
-
-  stages {
-
-    stage('Echo Env File') {
-      steps {
-        echo "Selected env: ${params.ENV_FILE}"
-      }
+    parameters {
+        choice(
+            name: 'ENV',
+            choices: ['dev', 'test', 'stg'],
+            description: 'Select the environment to run Playwright tests against'
+        )
     }
 
-    stage('Trigger CodeBuild') {
+    environment {
+        AWS_REGION = "ap-southeast-2"
+        CODEBUILD_PROJECT = "Prototype-CodeBuild-01092025-01"
+    }
+
+    stages {
+        stage('Echo Env File') {
         steps {
-            withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
-                script {
-                    // Start build and get the build ID
-                    def buildId = sh(
-                        script: """
-                            aws codebuild start-build \
-                                --project-name ${CODEBUILD_PROJECT} \
-                                --query 'build.id' \
-                                --output text
-                        """,
-                        returnStdout: true
-                    ).trim()
+            echo "Selected env: ${params.ENV_FILE}"
+        }
+        }
 
-                    echo "Started CodeBuild with ID: ${buildId}"
-
-                    // Wait for build to finish
-                    def status = "IN_PROGRESS"
-                    while (status == "IN_PROGRESS" || status == "QUEUED") {
-                        sleep(time: 10, unit: 'SECONDS')
-                        status = sh(
+        stage('Trigger CodeBuild') {
+            steps {
+                withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
+                    script {
+                        // Start build and get the build ID
+                        def buildId = sh(
                             script: """
-                                aws codebuild batch-get-builds \
-                                    --ids ${buildId} \
-                                    --query 'builds[0].buildStatus' \
+                                aws codebuild start-build \
+                                    --project-name ${CODEBUILD_PROJECT} \
+                                    --query 'build.id' \
                                     --output text
                             """,
                             returnStdout: true
                         ).trim()
-                        echo "Current build status: ${status}"
-                    }
 
-                    // Fail Jenkins if CodeBuild failed
-                    if (status != "SUCCEEDED") {
-                        error("CodeBuild failed with status: ${status}")
-                    } else {
-                        echo "CodeBuild succeeded!"
+                        echo "Started CodeBuild with ID: ${buildId}"
+
+                        // Wait for build to finish
+                        def status = "IN_PROGRESS"
+                        while (status == "IN_PROGRESS" || status == "QUEUED") {
+                            sleep(time: 10, unit: 'SECONDS')
+                            status = sh(
+                                script: """
+                                    aws codebuild batch-get-builds \
+                                        --ids ${buildId} \
+                                        --query 'builds[0].buildStatus' \
+                                        --output text
+                                """,
+                                returnStdout: true
+                            ).trim()
+                            echo "Current build status: ${status}"
+                        }
+
+                        // Fail Jenkins if CodeBuild failed
+                        if (status != "SUCCEEDED") {
+                            error("CodeBuild failed with status: ${status}")
+                        } else {
+                            echo "CodeBuild succeeded!"
+                        }
                     }
                 }
             }
         }
     }
-  }
 }
