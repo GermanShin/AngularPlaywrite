@@ -6,12 +6,13 @@ phases:
             nodejs: 22
         commands:
             - echo "Installing Node.js version 22 ..."
+            - cd TestAutomation
             - npm ci
             - npx playwright install --with-deps
-            - npm ci
+
     build:
         commands:
-            - cd TestAutomation/cdk1
+            - cd cdk1
             - 'echo "Current dir: $(pwd)"'
             - npm ci
             - npm run build
