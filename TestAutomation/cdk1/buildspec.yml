@@ -20,5 +20,6 @@ phases:
     post_build:
         commands:
             - cd $CODEBUILD_SRC_DIR
+            - 'echo "Current dir: $(pwd)"'
             - echo "Running Playwright tests"
             - npx playwright test
