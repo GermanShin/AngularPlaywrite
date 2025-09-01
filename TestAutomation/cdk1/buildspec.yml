@@ -5,15 +5,13 @@ phases:
         runtime-versions:
             nodejs: 22
         commands:
-            - echo "Installing AWS CDK globally..."
-            - npm install -g aws-cdk
-            - echo "Installing project dependencies..."
+            - echo "Installing Node.js version 22 ..."
+            - cd cdk1
             - npm ci
     build:
         commands:
-            - echo "Synthesizing CDK stack..."
+            - cd cdk1
             - npx cdk synth
-            - echo "CDK diff (optional)..."
             - npx cdk diff
     post_build:
         commands:
