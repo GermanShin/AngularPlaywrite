@@ -19,4 +19,6 @@ phases:
             - npx cdk synth
     post_build:
         commands:
+            - cd $CODEBUILD_SRC_DIR
             - echo "Running Playwright tests"
+            - npx playwright test
