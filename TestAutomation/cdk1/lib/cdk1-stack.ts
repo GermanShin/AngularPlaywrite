@@ -42,36 +42,36 @@ export class Cdk1Stack extends cdk.Stack {
             })
         );
 
-        new codebuild.CfnProject(this, 'PrototypeCodeBuild0109202501', {
-            name: 'Prototype-CodeBuild-01092025-01',
-            serviceRole: 'arn:aws:iam::484907527321:role/CodeBuildS3Role',
-            source: {
-                type: 'GITHUB',
-                location: 'https://github.com/GermanShin/AngularPlaywrite.git',
-                buildSpec: 'TestAutomation/cdk1/buildspec.yml',
-                gitCloneDepth: 1,
-                gitSubmodulesConfig: { fetchSubmodules: false },
-                reportBuildStatus: false,
-                insecureSsl: false,
-            },
-            artifacts: { type: 'NO_ARTIFACTS' },
-            cache: { type: 'NO_CACHE' },
-            environment: {
-                type: 'LINUX_CONTAINER',
-                image: 'aws/codebuild/amazonlinux-x86_64-standard:5.0',
-                computeType: 'BUILD_GENERAL1_MEDIUM',
-                privilegedMode: false,
-                imagePullCredentialsType: 'CODEBUILD',
-                environmentVariables: [],
-            },
-            timeoutInMinutes: 60,
-            queuedTimeoutInMinutes: 480,
-            encryptionKey:
-                'arn:aws:kms:ap-southeast-2:484907527321:alias/aws/s3',
-            logsConfig: {
-                cloudWatchLogs: { status: 'ENABLED' },
-                s3Logs: { status: 'DISABLED', encryptionDisabled: false },
-            },
-        });
+        // new codebuild.CfnProject(this, 'PrototypeCodeBuild0109202501', {
+        //     name: 'Prototype-CodeBuild-01092025-01',
+        //     serviceRole: 'arn:aws:iam::484907527321:role/CodeBuildS3Role',
+        //     source: {
+        //         type: 'GITHUB',
+        //         location: 'https://github.com/GermanShin/AngularPlaywrite.git',
+        //         buildSpec: 'TestAutomation/cdk1/buildspec.yml',
+        //         gitCloneDepth: 1,
+        //         gitSubmodulesConfig: { fetchSubmodules: false },
+        //         reportBuildStatus: false,
+        //         insecureSsl: false,
+        //     },
+        //     artifacts: { type: 'NO_ARTIFACTS' },
+        //     cache: { type: 'NO_CACHE' },
+        //     environment: {
+        //         type: 'LINUX_CONTAINER',
+        //         image: 'aws/codebuild/amazonlinux-x86_64-standard:5.0',
+        //         computeType: 'BUILD_GENERAL1_MEDIUM',
+        //         privilegedMode: false,
+        //         imagePullCredentialsType: 'CODEBUILD',
+        //         environmentVariables: [],
+        //     },
+        //     timeoutInMinutes: 60,
+        //     queuedTimeoutInMinutes: 480,
+        //     encryptionKey:
+        //         'arn:aws:kms:ap-southeast-2:484907527321:alias/aws/s3',
+        //     logsConfig: {
+        //         cloudWatchLogs: { status: 'ENABLED' },
+        //         s3Logs: { status: 'DISABLED', encryptionDisabled: false },
+        //     },
+        // });
     }
 }
