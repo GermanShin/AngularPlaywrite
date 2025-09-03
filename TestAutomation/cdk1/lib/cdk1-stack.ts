@@ -42,39 +42,39 @@ export class Cdk1Stack extends cdk.Stack {
             })
         );
 
-        const project = new codebuild.CfnProject(
-            this,
-            'Prototype-CodeBuild-01092025-01',
-            {
-                name: 'Prototype-CodeBuild-01092025-01',
+        // const project = new codebuild.CfnProject(
+        //     this,
+        //     'Prototype-CodeBuild-01092025-01',
+        //     {
+        //         name: 'Prototype-CodeBuild-01092025-01',
 
-                serviceRole: cbRole.roleArn,
+        //         serviceRole: cbRole.roleArn,
 
-                // Match your current artifacts config
-                artifacts: {
-                    type: 'NO_ARTIFACTS', // or 'S3' / 'CODEPIPELINE' to match your project
-                },
+        //         // Match your current artifacts config
+        //         artifacts: {
+        //             type: 'NO_ARTIFACTS', // or 'S3' / 'CODEPIPELINE' to match your project
+        //         },
 
-                // Match your current source
-                source: {
-                    type: 'GITHUB', // or 'GITHUB' | 'NO_SOURCE' | 'CODEPIPELINE' etc.
-                    location:
-                        'https://github.com/GermanShin/AngularPlaywrite.git', // omit if CODEPIPELINE/NO_SOURCE
-                    // If your current project uses a buildspec file, set it here:
-                    buildSpec: 'TestAutomation/cdk1/buildspec.yml',
-                },
+        //         // Match your current source
+        //         source: {
+        //             type: 'GITHUB', // or 'GITHUB' | 'NO_SOURCE' | 'CODEPIPELINE' etc.
+        //             location:
+        //                 'https://github.com/GermanShin/AngularPlaywrite.git', // omit if CODEPIPELINE/NO_SOURCE
+        //             // If your current project uses a buildspec file, set it here:
+        //             buildSpec: 'TestAutomation/cdk1/buildspec.yml',
+        //         },
 
-                // Match your current environment
-                environment: {
-                    type: 'LINUX_CONTAINER',
-                    computeType: 'BUILD_GENERAL1_MEDIUM', // or your existing compute type
-                    image: 'aws/codebuild/standard:7.0', // or your current image
-                    privilegedMode: true, // set according to current project
-                    // Keep your existing environment variables here for now.
-                    // We'll add SSM params *after* import:
-                    // environmentVariables: [ ... ],
-                },
-            }
-        );
+        //         // Match your current environment
+        //         environment: {
+        //             type: 'LINUX_CONTAINER',
+        //             computeType: 'BUILD_GENERAL1_MEDIUM', // or your existing compute type
+        //             image: 'aws/codebuild/standard:7.0', // or your current image
+        //             privilegedMode: true, // set according to current project
+        //             // Keep your existing environment variables here for now.
+        //             // We'll add SSM params *after* import:
+        //             // environmentVariables: [ ... ],
+        //         },
+        //     }
+        // );
     }
 }
