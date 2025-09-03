@@ -23,5 +23,22 @@ export class Cdk1Stack extends cdk.Stack {
                 mutable: true,
             }
         );
+
+        cbRole.addToPrincipalPolicy(
+            new iam.PolicyStatement({
+                actions: [
+                    'ssm:GetParameter',
+                    'ssm:GetParameters',
+                    'ssm:GetParametersByPath',
+                ],
+                resources: [
+                    this.formatArn({
+                        service: 'ssm',
+                        resource: 'parameter',
+                        resourceName: '/testautomation/*',
+                    }),
+                ],
+            })
+        );
     }
 }
