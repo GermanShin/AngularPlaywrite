@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
-import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
 export class Cdk1Stack extends cdk.Stack {
@@ -12,5 +12,16 @@ export class Cdk1Stack extends cdk.Stack {
             removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep bucket after stack deletion
             autoDeleteObjects: false, // Avoid deleting reports accidentally
         });
+
+        // 2. Replace with your actual role ARN (from IAM console)
+        const cbRole = iam.Role.fromRoleArn(
+            this,
+            'ImportedCodeBuildRole',
+            'arn:aws:iam::484907527321:role/CodeBuildS3Role',
+            {
+                // If you want CDK to add policies to it:
+                mutable: true,
+            }
+        );
     }
 }
