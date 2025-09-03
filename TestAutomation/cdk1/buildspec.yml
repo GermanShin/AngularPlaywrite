@@ -9,7 +9,6 @@ phases:
             - cd TestAutomation
             - npm ci
             - npx playwright install
-
     build:
         commands:
             - cd cdk1
@@ -17,6 +16,7 @@ phases:
             - npm ci
             - npm run build
             - npx cdk synth
+            - npx cdk deploy --require-approval=never
     post_build:
         commands:
             - cd $CODEBUILD_SRC_DIR/TestAutomation
