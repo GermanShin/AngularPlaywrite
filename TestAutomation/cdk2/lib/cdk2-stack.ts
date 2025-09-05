@@ -101,18 +101,6 @@ export class Cdk2Stack extends cdk.Stack {
             },
         });
 
-        // (Optional) Trigger builds only on pushes to main
-        const cfnProject = project.node.defaultChild as codebuild.CfnProject;
-        cfnProject.triggers = {
-            webhook: true,
-            filterGroups: [
-                [
-                    { type: 'EVENT', pattern: 'PUSH' },
-                    { type: 'HEAD_REF', pattern: '^refs/heads/main$' },
-                ],
-            ],
-        };
-
         // 4) Outputs
         new cdk.CfnOutput(this, 'ReportsBucketName', {
             value: reportsBucket.bucketName,
