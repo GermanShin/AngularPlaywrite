@@ -4,7 +4,7 @@ test('has title', async ({ page }) => {
     await page.goto('https://example.com');
 
     // This will fail and trigger video recording
-    await expect(page.locator('#non-existent-element')).toBeVisible();
+    await expect(page).toHaveTitle(/Playwright/);
 });
 
 test('get started link', async ({ page }) => {
