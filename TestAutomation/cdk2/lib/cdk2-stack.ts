@@ -8,7 +8,7 @@ export class Cdk2Stack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        // 1) Reports bucket
+        // 1) S3 bucket for Playwright reports
         const reportsBucket = new s3.Bucket(this, 'PlaywrightReportsBucket', {
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
@@ -17,19 +17,21 @@ export class Cdk2Stack extends cdk.Stack {
             autoDeleteObjects: false,
         });
 
-        // 2) CodeBuild service role
+        // 2) CodeBuild service role (least-privilege for this use case)
         const cbRole = new iam.Role(this, 'CodeBuildServiceRole', {
             assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
             description:
                 'Service role for running Playwright tests in CodeBuild',
         });
 
+        // Logs
         cbRole.addManagedPolicy(
             iam.ManagedPolicy.fromAwsManagedPolicyName(
                 'CloudWatchLogsFullAccess'
             )
         );
 
+        // SSM + optional KMS Decrypt (for SecureString params)
         cbRole.addToPolicy(
             new iam.PolicyStatement({
                 actions: [
@@ -38,15 +40,15 @@ export class Cdk2Stack extends cdk.Stack {
                     'ssm:GetParametersByPath',
                     'kms:Decrypt',
                 ],
-                resources: ['*'],
+                resources: ['*'], // tighten to specific ARNs when you finalize names/keys
             })
         );
 
+        // S3 write for uploading Playwright reports
         cbRole.addToPolicy(
             new iam.PolicyStatement({
                 actions: [
                     's3:PutObject',
-                    's3:PutObjectAcl',
                     's3:AbortMultipartUpload',
                     's3:ListBucket',
                     's3:GetBucketLocation',
@@ -58,19 +60,31 @@ export class Cdk2Stack extends cdk.Stack {
             })
         );
 
-        // 3) CodeBuild project referencing buildspec.yml in repo root
-        const project = new codebuild.Project(this, 'PlaywrightTestsProject', {
-            projectName: `PlaywrightE2ETests-${this.stackName}`,
+        // 3) CodeBuild project (GitHub source via PAT you imported with import-source-credentials)
+        const owner = 'GermanShin'; // <-- double-check exact GitHub owner/org
+        const repo = 'AngularPlaywrite'; // <-- double-check exact repo name/spelling
+        const branch = 'main';
+
+        const project = new codebuild.Project(this, 'PlaywrightProject', {
+            // Optional: set a stable name (otherwise CFN will generate one)
+            // projectName: 'PlaywrightE2ETests',
+
             role: cbRole,
+
             source: codebuild.Source.gitHub({
-                owner: 'GermanShin',
-                repo: 'AngularPlaywrite',
-                branchOrRef: 'main',
+                owner,
+                repo,
+                branchOrRef: branch,
                 cloneDepth: 1,
+                reportBuildStatus: true, // posts commit status using your PAT
             }),
+
+            buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+
             environment: {
-                buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+                buildImage: codebuild.LinuxBuildImage.STANDARD_7_0, // Ubuntu base; apt-get available
                 computeType: codebuild.ComputeType.SMALL,
+                privileged: false,
                 environmentVariables: {
                     REPORTS_BUCKET: { value: reportsBucket.bucketName },
                     API_KEY: {
@@ -78,12 +92,28 @@ export class Cdk2Stack extends cdk.Stack {
                             .PARAMETER_STORE,
                         value: '/testautomation/API_KEY',
                     },
+                    USER_NAME: {
+                        type: codebuild.BuildEnvironmentVariableType
+                            .PARAMETER_STORE,
+                        value: '/testautomation/USER_NAME',
+                    },
                 },
             },
-            // ✅ Allowed now because a source exists
-            buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
         });
 
+        // (Optional) Trigger builds only on pushes to main
+        const cfnProject = project.node.defaultChild as codebuild.CfnProject;
+        cfnProject.triggers = {
+            webhook: true,
+            filterGroups: [
+                [
+                    { type: 'EVENT', pattern: 'PUSH' },
+                    { type: 'HEAD_REF', pattern: '^refs/heads/main$' },
+                ],
+            ],
+        };
+
+        // 4) Outputs
         new cdk.CfnOutput(this, 'ReportsBucketName', {
             value: reportsBucket.bucketName,
         });
