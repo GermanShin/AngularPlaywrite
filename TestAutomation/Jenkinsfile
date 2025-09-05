@@ -11,7 +11,7 @@ pipeline {
 
     environment {
         AWS_REGION = "ap-southeast-2"
-        CODEBUILD_PROJECT = "Prototype-CodeBuild-01092025-01"
+        CODEBUILD_PROJECT = "PlaywrightProject938CE957-mPYWoqiDeDWu"
     }
 
     stages {
