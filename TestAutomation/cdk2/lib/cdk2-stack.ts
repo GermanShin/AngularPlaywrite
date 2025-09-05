@@ -79,7 +79,9 @@ export class Cdk2Stack extends cdk.Stack {
                 reportBuildStatus: true, // posts commit status using your PAT
             }),
 
-            buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+            buildSpec: codebuild.BuildSpec.fromSourceFilename(
+                'TestAutomation/cdk2/buildspec.yml'
+            ),
 
             environment: {
                 buildImage: codebuild.LinuxBuildImage.STANDARD_7_0, // Ubuntu base; apt-get available
