@@ -87,15 +87,15 @@ export class Cdk2Stack extends cdk.Stack {
                 privileged: false,
                 environmentVariables: {
                     REPORTS_BUCKET: { value: reportsBucket.bucketName },
-                    API_KEY: {
+                    TEST_USERNAME: {
                         type: codebuild.BuildEnvironmentVariableType
                             .PARAMETER_STORE,
-                        value: '/testautomation/API_KEY',
+                        value: '/testautomation/USERNAME',
                     },
-                    USER_NAME: {
+                    TEST_PASSWORD: {
                         type: codebuild.BuildEnvironmentVariableType
                             .PARAMETER_STORE,
-                        value: '/testautomation/USER_NAME',
+                        value: '/testautomation/PASSWORD',
                     },
                 },
             },
