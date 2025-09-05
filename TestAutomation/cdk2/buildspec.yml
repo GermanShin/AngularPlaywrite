@@ -9,21 +9,21 @@ phases:
             - cd TestAutomation
             - npm ci
             - npx playwright install
+
     pre_build:
         commands:
             - echo "Preparing environment variables..."
-            - echo "REPORTS_BUCKET=$REPORTS_BUCKET"
-            - echo "TEST_USERNAME=$TEST_USERNAME"
-            - echo "TEST_PASSWORD=$TEST_PASSWORD"
+            - echo "$REPORTS_BUCKET"
+            - echo "$TEST_USERNAME"
+            - echo "$TEST_PASSWORD"
+
     build:
         commands:
-            - echo "Running Playwright tests..."
-            - npx playwright test  --reporter=list --reporter=junit || true
-    post_build:
-        commands:
-            - echo "Uploading Playwright reports to S3..."
-            - echo "$REPORTS_BUCKET/$CODEBUILD_BUILD_ID/playwright-report"
-            - |
-                if [ -d playwright-report ]; then
-                  aws s3 sync playwright-report s3://$REPORTS_BUCKET/$CODEBUILD_BUILD_ID/playwright-report/
-                fi
+            - npx playwright test
+
+artifacts:
+    base-directory: TestAutomation
+    files:
+        - 'playwright-report/**/*'
+        - 'test-results/**/*'
+    discard-paths: no

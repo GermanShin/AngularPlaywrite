@@ -101,6 +101,18 @@ export class Cdk2Stack extends cdk.Stack {
                     },
                 },
             },
+            // 4) Artifact destination in S3 (this is the Console “Artifacts” section)
+            artifacts: codebuild.Artifacts.s3({
+                bucket: reportsBucket,
+                // Folder/prefix inside the bucket (optional)
+                path: 'playwright-reports',
+                // Put each build under its own folder (recommended)
+                includeBuildId: true,
+                // Keep files as-is (no zip). Set to true if you want a single ZIP.
+                packageZip: false,
+                // identifier: 'PrimaryArtifact', // only needed when using multiple artifacts
+                // name: 'reports.zip', // used when packageZip: true
+            }),
         });
 
         // 4) Outputs
