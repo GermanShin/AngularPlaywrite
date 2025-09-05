@@ -84,7 +84,7 @@ export class Cdk2Stack extends cdk.Stack {
             ),
 
             environment: {
-                buildImage: codebuild.LinuxBuildImage.STANDARD_7_0, // Ubuntu base; apt-get available
+                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5, // Amazon Linux 2 Standard:5.0
                 computeType: codebuild.ComputeType.SMALL,
                 privileged: false,
                 environmentVariables: {
@@ -92,12 +92,12 @@ export class Cdk2Stack extends cdk.Stack {
                     TEST_USERNAME: {
                         type: codebuild.BuildEnvironmentVariableType
                             .PARAMETER_STORE,
-                        value: '/testautomation/USERNAME',
+                        value: '/testautomation/local/username',
                     },
                     TEST_PASSWORD: {
                         type: codebuild.BuildEnvironmentVariableType
                             .PARAMETER_STORE,
-                        value: '/testautomation/PASSWORD',
+                        value: '/testautomation/local/password',
                     },
                 },
             },

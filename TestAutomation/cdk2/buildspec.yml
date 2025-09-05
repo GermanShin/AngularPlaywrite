@@ -6,36 +6,24 @@ phases:
             nodejs: 22
         commands:
             - echo "Installing Node.js dependencies..."
+            - cd TestAutomation
             - npm ci
-            - npx playwright install --with-deps
+            - npx playwright install
     pre_build:
         commands:
             - echo "Preparing environment variables..."
-            # - rm -f .env && touch .env
-            # - echo "API_KEY=$API_KEY" >> .env
-            # - echo "REPORTS_BUCKET=$REPORTS_BUCKET" >> .env
+            - echo "REPORTS_BUCKET=$REPORTS_BUCKET"
+            - echo "TEST_USERNAME=$TEST_USERNAME"
+            - echo "TEST_PASSWORD=$TEST_PASSWORD"
     build:
         commands:
             - echo "Running Playwright tests..."
             - npx playwright test --reporter=html
-    post_build:
-        commands:
             - echo "Uploading Playwright reports to S3..."
             - |
                 if [ -d playwright-report ]; then
                   aws s3 sync playwright-report s3://$REPORTS_BUCKET/$CODEBUILD_BUILD_ID/playwright-report/
                 fi
-            - |
-                if [ -d test-results ]; then
-                  aws s3 sync test-results s3://$REPORTS_BUCKET/$CODEBUILD_BUILD_ID/test-results/
-                fi
-
-artifacts:
-    files:
-        - playwright-report/**/*
-        - test-results/**/*
-    discard-paths: no
-
-cache:
-    paths:
-        - node_modules/**/*
+    post_build:
+        commands:
+            - echo "Uploading Playwright reports to S3..."
