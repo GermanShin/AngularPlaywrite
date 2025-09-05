@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test('has title', async ({ page }) => {
-    await page.goto('https://playwright.dev/');
-
-    // This will fail and trigger video recording
-    await expect(page).toHaveTitle(/Playwright/);
-    // await page.goto('https://example.com');
+    // await page.goto('https://playwright.dev/');
 
     // // This will fail and trigger video recording
-    // await expect(page.locator('#non-existent-element')).toBeVisible();
+    // await expect(page).toHaveTitle(/Playwright/);
+    await page.goto('https://example.com');
+
+    // This will fail and trigger video recording
+    await expect(page.locator('#non-existent-element')).toBeVisible();
 });
 
 test('get started link', async ({ page }) => {
