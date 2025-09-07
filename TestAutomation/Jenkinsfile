@@ -25,18 +25,39 @@ pipeline {
             steps {
                 withAWS(credentials: 'david-shin-iam-user-cred', region: "${AWS_REGION}") {
                     script {
+                         def slackNotify = {
+                            String msg ->
+                                // escape chars that would break JSON
+                                def safe = msg.replace('\\', '\\\\').replace('"', '\\"')
+
+                                withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK')]) {
+                                                withEnv(["TEXT=${safe}"]) {
+                                                sh(script: '''#!/bin/bash
+                                                    set -euo pipefail
+                                                    # Send JSON via stdin; avoid logging secrets
+                                                    printf '{"text":"%s"}' "$TEXT" | curl -s -X POST -H "Content-type: application/json" --data @- "$SLACK_WEBHOOK" >/dev/null
+                                                    ''')
+                                                }
+                                }
+                        }
+
+                        // Notify start (single-line triple-quoted string)
+                        slackNotify("""▶️ Starting *CodeBuild* for `${env.JOB_NAME}` #${env.BUILD_NUMBER} — project: `${env.CODEBUILD_PROJECT}`, env: `${params.ENV}`""")
+
                         // Start build and get the build ID
                         def buildId = sh(
                             script: """
                                 aws codebuild start-build \
                                     --project-name ${CODEBUILD_PROJECT} \
-                                    --query 'build.id' \
-                                    --output text
+                                    --environment-variables-override name=TEST_ENV,value=${params.ENV} \
+                                    --query 'build.id' --output text
                             """,
                             returnStdout: true
                         ).trim()
 
                         echo "Started CodeBuild with ID: ${buildId}"
+
+                        def codebuildUrl = "https://console.aws.amazon.com/codesuite/codebuild/projects/${env.CODEBUILD_PROJECT}/build/${buildId}/log?region=${env.AWS_REGION}"
 
                         // Wait for build to finish
                         def status = "IN_PROGRESS"
@@ -56,8 +77,10 @@ pipeline {
 
                         // Fail Jenkins if CodeBuild failed
                         if (status != "SUCCEEDED") {
+                            slackNotify("""❌ *CodeBuild FAILED* — `${env.JOB_NAME}` #${env.BUILD_NUMBER} | project: `${env.CODEBUILD_PROJECT}`, env: `${params.ENV}`, status: `${status}` (<${env.BUILD_URL}|Open Jenkins>) • (<${codebuildUrl}|Open CodeBuild>)""")
                             error("CodeBuild failed with status: ${status}")
                         } else {
+                            slackNotify("""✅ *CodeBuild SUCCEEDED* — `${env.JOB_NAME}` #${env.BUILD_NUMBER} | project: `${env.CODEBUILD_PROJECT}`, env: `${params.ENV}` (<${env.BUILD_URL}|Open Jenkins>) • (<${codebuildUrl}|Open CodeBuild>)""")
                             echo "CodeBuild succeeded!"
                         }
                     }
