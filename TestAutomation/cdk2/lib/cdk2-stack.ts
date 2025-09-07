@@ -99,11 +99,6 @@ export class Cdk2Stack extends cdk.Stack {
                             .PARAMETER_STORE,
                         value: '/testautomation/local/password',
                     },
-                    TEST_PARAMETER: {
-                        type: codebuild.BuildEnvironmentVariableType
-                            .PARAMETER_STORE,
-                        value: '/testautomation/local/password',
-                    },
                 },
             },
             // 4) Artifact destination in S3 (this is the Console “Artifacts” section)
