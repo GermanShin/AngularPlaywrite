@@ -1,0 +1,29 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 22
+        commands:
+            - echo "Installing Node.js dependencies..."
+            - cd TestAutomation
+            - npm ci
+            - npx playwright install
+
+    pre_build:
+        commands:
+            - echo "Preparing environment variables..."
+            - echo "$REPORTS_BUCKET"
+            - echo "$TEST_USERNAME"
+            - echo "$TEST_PASSWORD"
+
+    build:
+        commands:
+            - npx playwright test
+
+artifacts:
+    base-directory: TestAutomation
+    files:
+        - 'playwright-report/**/*'
+        - 'test-results/**/*'
+    discard-paths: no

@@ -80,7 +80,7 @@ export class Cdk3Stack extends cdk.Stack {
             }),
 
             buildSpec: codebuild.BuildSpec.fromSourceFilename(
-                'TestAutomation/cdk2/buildspec.yml'
+                'TestAutomation/buildspec.yml'
             ),
 
             environment: {
