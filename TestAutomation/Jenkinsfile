@@ -12,7 +12,7 @@ pipeline {
     environment {
         AWS_REGION = "ap-southeast-2"
         CODEBUILD_PROJECT = "PlaywrightProject938CE957-ivchcBOLKQzi"
-        BRANCH="main"
+        BRANCH="feature/pwproject/ticket-1"
     }
 
     stages {
