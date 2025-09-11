@@ -12,6 +12,7 @@ pipeline {
     environment {
         AWS_REGION = "ap-southeast-2"
         CODEBUILD_PROJECT = "PlaywrightProject938CE957-ivchcBOLKQzi"
+        BRANCH="main"
     }
 
     stages {
@@ -49,6 +50,7 @@ pipeline {
                             script: """
                                 aws codebuild start-build \
                                     --project-name ${CODEBUILD_PROJECT} \
+                                    --source-version ${env.BRANCH} \
                                      --environment-variables-override \
                                        name=TEST_ENV,value=${params.ENV},type=PLAINTEXT \
                                        name=TEST_USERNAME,value=/testautomation/${params.ENV}/username,type=PARAMETER_STORE \
