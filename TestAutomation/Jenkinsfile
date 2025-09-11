@@ -49,7 +49,10 @@ pipeline {
                             script: """
                                 aws codebuild start-build \
                                     --project-name ${CODEBUILD_PROJECT} \
-                                    --environment-variables-override name=TEST_ENV,value=${params.ENV} \
+                                     --environment-variables-override \
+                                       name=TEST_ENV,value=${params.ENV},type=PLAINTEXT \
+                                       name=TEST_USERNAME,value=/testautomation/${params.ENV}/username,type=PARAMETER_STORE \
+                                       name=TEST_PASSWORD,value=/testautomation/${params.ENV}/password,type=PARAMETER_STORE \
                                     --query 'build.id' --output text
                             """,
                             returnStdout: true
