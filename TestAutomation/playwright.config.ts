@@ -28,18 +28,18 @@ export default defineConfig({
     /* Opt out of parallel tests on CI. */
     workers: process.env.CI ? 1 : undefined,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [
-        ['list'], // Console output
-        ['junit', { outputFile: 'test-results/results.xml' }],
-        ['html', { open: 'never', outputFolder: 'playwright-report' }],
-    ],
+    // reporter: [
+    //     ['list'], // Console output
+    //     ['junit', { outputFile: 'test-results/results.xml' }],
+    //     ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    // ],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
         /* Base URL to use in actions like `await page.goto('/')`. */
         baseURL: process.env.BASE_URL,
 
         // Record video only on failure
-        video: 'retain-on-failure',
+        video: process.env.CI ? 'on' : 'retain-on-failure',
 
         screenshot: 'only-on-failure',
 
@@ -51,7 +51,10 @@ export default defineConfig({
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: {
+                ...devices['Desktop Chrome'],
+                headless: process.env.CI ? true : false,
+            },
         },
 
         // {
