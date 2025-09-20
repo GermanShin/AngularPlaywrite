@@ -3,12 +3,15 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 
 export class Cdk3Stack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        // 1) S3 bucket for Playwright reports
+        // S3 bucket for Playwright reports
         const reportsBucket = new s3.Bucket(this, 'PlaywrightReportsBucket', {
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
@@ -17,7 +20,7 @@ export class Cdk3Stack extends cdk.Stack {
             autoDeleteObjects: false,
         });
 
-        // 2) CodeBuild service role (least-privilege for this use case)
+        // CodeBuild service role (least-privilege for this use case)
         const cbRole = new iam.Role(this, 'CodeBuildServiceRole', {
             assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
             description:
@@ -104,16 +107,61 @@ export class Cdk3Stack extends cdk.Stack {
             // 4) Artifact destination in S3 (this is the Console “Artifacts” section)
             artifacts: codebuild.Artifacts.s3({
                 bucket: reportsBucket,
-                // Folder/prefix inside the bucket (optional)
-                path: 'playwright-reports',
-                // Put each build under its own folder (recommended)
-                includeBuildId: true,
-                // Keep files as-is (no zip). Set to true if you want a single ZIP.
-                packageZip: false,
-                // identifier: 'PrimaryArtifact', // only needed when using multiple artifacts
-                // name: 'reports.zip', // used when packageZip: true
+                path: 'allure-results', // prefix in results bucket
+                name: 'allure-results.zip', // object name within the build-id dir
+                includeBuildId: true, // s3://.../allure-results/<build-id>/allure-results.zip
+                packageZip: true,
+                // path: 'playwright-reports',
+                // includeBuildId: true,
+                // packageZip: false,
             }),
         });
+
+        // Create a log group (7-day retention just for debugging)
+        const debugLog = new logs.LogGroup(this, 'PlaywrightEventDebugLog', {
+            retention: logs.RetentionDays.ONE_WEEK,
+        });
+
+        // Your EventBridge rule that watches for Playwright SUCCEEDED
+        const rule = new events.Rule(this, 'OnPlaywrightSuccessDebug', {
+            eventPattern: {
+                source: ['aws.codebuild'],
+                detailType: ['CodeBuild Build State Change'],
+                detail: {
+                    'build-status': ['SUCCEEDED', 'FAILED'],
+                    'project-name': [project.projectName],
+                },
+            },
+        });
+
+        // Send a compliant logEvent: MUST be { timestamp, message }
+        rule.addTarget(
+            new targets.CloudWatchLogGroup(debugLog, {
+                logEvent: events.RuleTargetInput.fromObject({
+                    // EventBridge “time” is an RFC3339 string — valid for CloudWatch Logs' timestamp
+                    timestamp: events.EventField.fromPath('$.time'),
+                    // message must be a STRING. Keep it simple (e.g., the build-id).
+                    message: events.EventField.fromPath('$.detail.build-id'),
+                }),
+            })
+        );
+
+        // Minimal: dump entire event to logs
+        // rule.addTarget(
+        //     new targets.CloudWatchLogGroup(debugLog, {
+        //         // optional: shape the event payload so it’s easy to skim
+        //         event: events.RuleTargetInput.fromObject({
+        //             message: 'Playwright build finished',
+        //             buildId: events.EventField.fromPath('$.detail.build-id'),
+        //             project: events.EventField.fromPath(
+        //                 '$.detail.project-name'
+        //             ),
+        //             status: events.EventField.fromPath('$.detail.build-status'),
+        //             time: events.EventField.fromPath('$.time'),
+        //             raw: events.EventField.fromPath('$'), // full event for deep debugging
+        //         }),
+        //     })
+        // );
 
         // 4) Outputs
         new cdk.CfnOutput(this, 'ReportsBucketName', {

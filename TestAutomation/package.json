@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test:e2e": "playwright test",
+        "test": "playwright test",
         "cdk:synth": "cd cdk && npx ts-node bin/cdk.ts",
         "cdk:deploy": "cd cdk && npm run build && npx cdk deploy --require-approval never"
     },
