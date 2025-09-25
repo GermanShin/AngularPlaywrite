@@ -79,7 +79,7 @@ export class Cdk3Stack extends cdk.Stack {
                 repo,
                 branchOrRef: branch,
                 cloneDepth: 1,
-                reportBuildStatus: true, // posts commit status using your PAT
+                reportBuildStatus: true,
             }),
 
             buildSpec: codebuild.BuildSpec.fromSourceFilename(
@@ -92,7 +92,7 @@ export class Cdk3Stack extends cdk.Stack {
                 privileged: false,
                 environmentVariables: {
                     REPORTS_BUCKET: { value: reportsBucket.bucketName },
-                    TEST_USERNAME: {
+                    TEST_USERNAME_1: {
                         type: codebuild.BuildEnvironmentVariableType
                             .PARAMETER_STORE,
                         value: '/testautomation/local/username',
@@ -117,9 +117,79 @@ export class Cdk3Stack extends cdk.Stack {
             }),
         });
 
-        // Create a log group (7-day retention just for debugging)
-        const debugLog = new logs.LogGroup(this, 'PlaywrightEventDebugLog', {
-            retention: logs.RetentionDays.ONE_WEEK,
+        // S3 bucket for Allure reports
+        const siteBucket = new s3.Bucket(this, 'SiteBucket', {
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+            encryption: s3.BucketEncryption.S3_MANAGED,
+            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            // no website hosting; the bucket stays private and is only read by Lambda
+        });
+
+        // 1) Create a CodeBuild service role
+        const allureRole = new iam.Role(this, 'AllureServiceRole', {
+            assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
+            description: 'Role for Allure renderer CodeBuild project',
+        });
+
+        // 2) Grant READ on results bucket (objects) + LIST on bucket (scoped to prefix)
+        allureRole.addToPolicy(
+            new iam.PolicyStatement({
+                actions: ['s3:GetObject'],
+                resources: [reportsBucket.arnForObjects('allure-results/*')],
+            })
+        );
+        allureRole.addToPolicy(
+            new iam.PolicyStatement({
+                actions: ['s3:ListBucket'],
+                resources: [reportsBucket.bucketArn],
+                conditions: {
+                    StringLike: { 's3:prefix': ['allure-results/*'] },
+                },
+            })
+        );
+
+        // 3) Grant READ/WRITE on site bucket (objects) + LIST on bucket (scoped to prefix)
+        allureRole.addToPolicy(
+            new iam.PolicyStatement({
+                actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+                resources: [siteBucket.arnForObjects('reports/*')],
+            })
+        );
+
+        allureRole.addToPolicy(
+            new iam.PolicyStatement({
+                actions: ['s3:ListBucket'],
+                resources: [siteBucket.bucketArn],
+                conditions: { StringLike: { 's3:prefix': ['reports/*'] } },
+            })
+        );
+
+        const allureProject = new codebuild.Project(this, 'AllureProject', {
+            role: allureRole, // <- use your custom role
+            source: codebuild.Source.gitHub({
+                owner,
+                repo,
+                branchOrRef: branch,
+                cloneDepth: 1,
+                reportBuildStatus: true,
+            }),
+            buildSpec: codebuild.BuildSpec.fromSourceFilename(
+                'buildspec.allure.yml'
+            ),
+            environment: {
+                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5, // Amazon Linux 2 Standard:5.0
+                computeType: codebuild.ComputeType.SMALL,
+            },
+            environmentVariables: {
+                RESULTS_BUCKET: { value: reportsBucket.bucketName },
+                SITE_BUCKET: { value: siteBucket.bucketName }, // optional, if you ever need it in scripts
+            },
+            artifacts: codebuild.Artifacts.s3({
+                bucket: siteBucket,
+                path: 'reports',
+                includeBuildId: true,
+                packageZip: false,
+            }),
         });
 
         // Your EventBridge rule that watches for Playwright SUCCEEDED
@@ -134,34 +204,37 @@ export class Cdk3Stack extends cdk.Stack {
             },
         });
 
-        // Send a compliant logEvent: MUST be { timestamp, message }
         rule.addTarget(
-            new targets.CloudWatchLogGroup(debugLog, {
-                logEvent: events.RuleTargetInput.fromObject({
-                    // EventBridge “time” is an RFC3339 string — valid for CloudWatch Logs' timestamp
-                    timestamp: events.EventField.fromPath('$.time'),
-                    // message must be a STRING. Keep it simple (e.g., the build-id).
-                    message: events.EventField.fromPath('$.detail.build-id'),
+            new targets.CodeBuildProject(allureProject, {
+                event: events.RuleTargetInput.fromObject({
+                    // This maps 1:1 to CodeBuild StartBuildRequest
+                    environmentVariablesOverride: [
+                        {
+                            name: 'buildId',
+                            value: events.EventField.fromPath(
+                                '$.detail.build-id'
+                            ),
+                            type: 'PLAINTEXT',
+                        },
+                        {
+                            name: 'status',
+                            value: events.EventField.fromPath(
+                                '$.detail.build-status'
+                            ),
+                            type: 'PLAINTEXT',
+                        },
+                        {
+                            name: 'project',
+                            value: events.EventField.fromPath(
+                                '$.detail.project-name'
+                            ),
+                            type: 'PLAINTEXT',
+                        },
+                    ],
                 }),
+                retryAttempts: 3,
             })
         );
-
-        // Minimal: dump entire event to logs
-        // rule.addTarget(
-        //     new targets.CloudWatchLogGroup(debugLog, {
-        //         // optional: shape the event payload so it’s easy to skim
-        //         event: events.RuleTargetInput.fromObject({
-        //             message: 'Playwright build finished',
-        //             buildId: events.EventField.fromPath('$.detail.build-id'),
-        //             project: events.EventField.fromPath(
-        //                 '$.detail.project-name'
-        //             ),
-        //             status: events.EventField.fromPath('$.detail.build-status'),
-        //             time: events.EventField.fromPath('$.time'),
-        //             raw: events.EventField.fromPath('$'), // full event for deep debugging
-        //         }),
-        //     })
-        // );
 
         // 4) Outputs
         new cdk.CfnOutput(this, 'ReportsBucketName', {
