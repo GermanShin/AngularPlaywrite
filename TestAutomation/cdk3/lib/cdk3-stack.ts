@@ -107,10 +107,8 @@ export class Cdk3Stack extends cdk.Stack {
             // 4) Artifact destination in S3 (this is the Console “Artifacts” section)
             artifacts: codebuild.Artifacts.s3({
                 bucket: reportsBucket,
-                path: 'allure-results', // prefix in results bucket
-                name: 'allure-results.zip', // object name within the build-id dir
-                includeBuildId: true, // s3://.../allure-results/<build-id>/allure-results.zip
-                packageZip: true,
+                includeBuildId: false, // s3://.../allure-results/<build-id>/allure-results.zip
+                packageZip: false,
                 // path: 'playwright-reports',
                 // includeBuildId: true,
                 // packageZip: false,
