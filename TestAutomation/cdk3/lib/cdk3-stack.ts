@@ -4,14 +4,12 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as events from 'aws-cdk-lib/aws-events';
-import * as logs from 'aws-cdk-lib/aws-logs';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 
 export class Cdk3Stack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        // S3 bucket for Playwright reports
         const reportsBucket = new s3.Bucket(this, 'PlaywrightReportsBucket', {
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
@@ -20,21 +18,18 @@ export class Cdk3Stack extends cdk.Stack {
             autoDeleteObjects: false,
         });
 
-        // CodeBuild service role (least-privilege for this use case)
         const cbRole = new iam.Role(this, 'CodeBuildServiceRole', {
             assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
             description:
                 'Service role for running Playwright tests in CodeBuild',
         });
 
-        // Logs
         cbRole.addManagedPolicy(
             iam.ManagedPolicy.fromAwsManagedPolicyName(
                 'CloudWatchLogsFullAccess'
             )
         );
 
-        // SSM + optional KMS Decrypt (for SecureString params)
         cbRole.addToPolicy(
             new iam.PolicyStatement({
                 actions: [
@@ -43,11 +38,10 @@ export class Cdk3Stack extends cdk.Stack {
                     'ssm:GetParametersByPath',
                     'kms:Decrypt',
                 ],
-                resources: ['*'], // tighten to specific ARNs when you finalize names/keys
+                resources: ['*'],
             })
         );
 
-        // S3 write for uploading Playwright reports
         cbRole.addToPolicy(
             new iam.PolicyStatement({
                 actions: [
@@ -63,15 +57,11 @@ export class Cdk3Stack extends cdk.Stack {
             })
         );
 
-        // 3) CodeBuild project (GitHub source via PAT you imported with import-source-credentials)
-        const owner = 'GermanShin'; // <-- double-check exact GitHub owner/org
-        const repo = 'AngularPlaywrite'; // <-- double-check exact repo name/spelling
+        const owner = 'GermanShin';
+        const repo = 'AngularPlaywrite';
         const branch = 'main';
 
         const project = new codebuild.Project(this, 'PlaywrightProject', {
-            // Optional: set a stable name (otherwise CFN will generate one)
-            // projectName: 'PlaywrightE2ETests',
-
             role: cbRole,
 
             source: codebuild.Source.gitHub({
@@ -87,7 +77,7 @@ export class Cdk3Stack extends cdk.Stack {
             ),
 
             environment: {
-                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5, // Amazon Linux 2 Standard:5.0
+                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
                 computeType: codebuild.ComputeType.SMALL,
                 privileged: false,
                 environmentVariables: {
@@ -104,49 +94,34 @@ export class Cdk3Stack extends cdk.Stack {
                     },
                 },
             },
-            // 4) Artifact destination in S3 (this is the Console “Artifacts” section)
+
             artifacts: codebuild.Artifacts.s3({
                 bucket: reportsBucket,
-                includeBuildId: false, // s3://.../allure-results/<build-id>/allure-results.zip
+                includeBuildId: false,
                 packageZip: false,
-                // path: 'playwright-reports',
-                // includeBuildId: true,
-                // packageZip: false,
             }),
         });
 
-        // S3 bucket for Allure reports
         const siteBucket = new s3.Bucket(this, 'SiteBucket', {
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            // no website hosting; the bucket stays private and is only read by Lambda
         });
 
-        // 1) Create a CodeBuild service role
         const allureRole = new iam.Role(this, 'AllureServiceRole', {
             assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
             description: 'Role for Allure renderer CodeBuild project',
         });
 
-        // 2) Grant READ on results bucket (objects) + LIST on bucket (scoped to prefix)
-        allureRole.addToPolicy(
-            new iam.PolicyStatement({
-                actions: ['s3:GetObject'],
-                resources: [reportsBucket.arnForObjects('allure-results/*')],
-            })
-        );
-        allureRole.addToPolicy(
+        allureRole!.addToPolicy(
             new iam.PolicyStatement({
                 actions: ['s3:ListBucket'],
                 resources: [reportsBucket.bucketArn],
-                conditions: {
-                    StringLike: { 's3:prefix': ['allure-results/*'] },
-                },
             })
         );
+        reportsBucket.grantReadWrite(allureRole);
+        reportsBucket.grantDelete(allureRole!);
 
-        // 3) Grant READ/WRITE on site bucket (objects) + LIST on bucket (scoped to prefix)
         allureRole.addToPolicy(
             new iam.PolicyStatement({
                 actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
@@ -163,7 +138,7 @@ export class Cdk3Stack extends cdk.Stack {
         );
 
         const allureProject = new codebuild.Project(this, 'AllureProject', {
-            role: allureRole, // <- use your custom role
+            role: allureRole,
             source: codebuild.Source.gitHub({
                 owner,
                 repo,
@@ -175,12 +150,12 @@ export class Cdk3Stack extends cdk.Stack {
                 'buildspec.allure.yml'
             ),
             environment: {
-                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5, // Amazon Linux 2 Standard:5.0
+                buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
                 computeType: codebuild.ComputeType.SMALL,
             },
             environmentVariables: {
                 RESULTS_BUCKET: { value: reportsBucket.bucketName },
-                SITE_BUCKET: { value: siteBucket.bucketName }, // optional, if you ever need it in scripts
+                SITE_BUCKET: { value: siteBucket.bucketName },
             },
             artifacts: codebuild.Artifacts.s3({
                 bucket: siteBucket,
@@ -190,7 +165,6 @@ export class Cdk3Stack extends cdk.Stack {
             }),
         });
 
-        // Your EventBridge rule that watches for Playwright SUCCEEDED
         const rule = new events.Rule(this, 'OnPlaywrightSuccessDebug', {
             eventPattern: {
                 source: ['aws.codebuild'],
@@ -205,7 +179,6 @@ export class Cdk3Stack extends cdk.Stack {
         rule.addTarget(
             new targets.CodeBuildProject(allureProject, {
                 event: events.RuleTargetInput.fromObject({
-                    // This maps 1:1 to CodeBuild StartBuildRequest
                     environmentVariablesOverride: [
                         {
                             name: 'buildId',
@@ -234,7 +207,6 @@ export class Cdk3Stack extends cdk.Stack {
             })
         );
 
-        // 4) Outputs
         new cdk.CfnOutput(this, 'ReportsBucketName', {
             value: reportsBucket.bucketName,
         });
