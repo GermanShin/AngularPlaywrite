@@ -5,8 +5,19 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import {
+    Distribution,
+    ViewerProtocolPolicy,
+    AllowedMethods,
+    CachePolicy,
+} from 'aws-cdk-lib/aws-cloudfront';
 
 export class Cdk3Stack extends cdk.Stack {
+    public readonly bucketName: string;
+    public readonly cloudFrontDomain: string;
+    public readonly distributionId: string;
+
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
@@ -106,6 +117,30 @@ export class Cdk3Stack extends cdk.Stack {
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+        });
+
+        const origin = S3BucketOrigin.withOriginAccessControl(siteBucket);
+
+        const dist = new Distribution(this, 'AllureDistribution', {
+            defaultBehavior: {
+                origin,
+                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                allowedMethods: AllowedMethods.ALLOW_GET_HEAD,
+                cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+            },
+            comment: 'Allure report distribution (S3 private via OAC)',
+        });
+
+        this.bucketName = siteBucket.bucketName;
+        this.cloudFrontDomain = dist.distributionDomainName;
+        this.distributionId = dist.distributionId;
+
+        new cdk.CfnOutput(this, 'BucketName', { value: this.bucketName });
+        new cdk.CfnOutput(this, 'CloudFrontDomain', {
+            value: `https://${this.cloudFrontDomain}`,
+        });
+        new cdk.CfnOutput(this, 'DistributionId', {
+            value: this.distributionId,
         });
 
         const allureRole = new iam.Role(this, 'AllureServiceRole', {
