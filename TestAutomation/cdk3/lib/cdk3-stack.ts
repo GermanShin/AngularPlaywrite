@@ -135,12 +135,19 @@ export class Cdk3Stack extends cdk.Stack {
         this.cloudFrontDomain = dist.distributionDomainName;
         this.distributionId = dist.distributionId;
 
-        new cdk.CfnOutput(this, 'BucketName', { value: this.bucketName });
-        new cdk.CfnOutput(this, 'CloudFrontDomain', {
-            value: `https://${this.cloudFrontDomain}`,
+        new cdk.CfnOutput(this, 'AllureBucketName', {
+            value: this.bucketName,
+            exportName: 'Allure-BucketName',
         });
-        new cdk.CfnOutput(this, 'DistributionId', {
+
+        new cdk.CfnOutput(this, 'AllureCloudFrontDomain', {
+            value: dist.distributionDomainName, // ⚠️ no protocol
+            exportName: 'Allure-CloudFrontDomain',
+        });
+
+        new cdk.CfnOutput(this, 'AllureDistributionId', {
             value: this.distributionId,
+            exportName: 'Allure-DistributionId',
         });
 
         const allureRole = new iam.Role(this, 'AllureServiceRole', {
