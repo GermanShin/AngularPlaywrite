@@ -4,15 +4,30 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const env = process.env.ENV || 'dev';
-const envPath = path.resolve(__dirname, `env/env.${env}`);
+dotenv.config({ path: 'env/.env' });
 
+const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
+console.log(ENVIRONMENT);
+const APP_NAME = process.env.APP_NAME || 'davidApp';
+
+const envPath = path.resolve(__dirname, `env/env.${ENVIRONMENT}`);
 if (fs.existsSync(envPath)) {
     dotenv.config({ path: envPath });
-    console.log(`Loaded environment: ${env}`);
+    console.log(`Loaded environment: ${ENVIRONMENT}`);
 } else {
-    console.warn(`⚠️ No .env file found for: ${env}`);
+    console.warn(`⚠️ No .env file found for: ${ENVIRONMENT}`);
 }
+
+const VERSION = process.env.VERSION || '0.0.0';
+
+const allureResultsPath = path.join(
+    'allure-results',
+    APP_NAME,
+    VERSION,
+    ENVIRONMENT
+);
+
+console.log(allureResultsPath);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -28,7 +43,18 @@ export default defineConfig({
     /* Opt out of parallel tests on CI. */
     workers: process.env.CI ? 1 : undefined,
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: [['line'], ['allure-playwright']],
+    reporter: [
+        ['list'],
+        [
+            'allure-playwright',
+            {
+                // Use the constructed path for the results directory
+                resultsDir: allureResultsPath,
+                detail: true,
+                suiteTitle: false,
+            },
+        ],
+    ],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
         /* Base URL to use in actions like `await page.goto('/')`. */
@@ -49,7 +75,7 @@ export default defineConfig({
             name: 'chromium',
             use: {
                 ...devices['Desktop Chrome'],
-                headless: process.env.CI ? true : false,
+                headless: true,
             },
         },
 
